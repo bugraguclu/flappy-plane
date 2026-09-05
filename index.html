@@ -22,7 +22,20 @@
   body{display:grid;place-items:center;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
-  #stage{position:relative;width:min(96vw, calc(94svh * 420 / 640));aspect-ratio:420/640}
+  /* Sahne, çentik/ana ekran çubuğu payı düşülmüş görünür alana daima sığar.
+     Hem genişlik hem yükseklik hesaplandığı için aspect-ratio desteği şart değil. */
+  #stage{
+    --insetX: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
+    --insetY: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+    --availW: calc(100vw - var(--insetX));
+    --availH: calc(100vh - var(--insetY));
+    position:relative;
+    width:  min(calc(var(--availW) * 0.97), calc(var(--availH) * 0.97 * 420 / 640));
+    height: min(calc(var(--availH) * 0.97), calc(var(--availW) * 0.97 * 640 / 420));
+    max-width:100%; max-height:100%;
+  }
+  /* svh: tarayıcı çubukları görünürken bile doğru yükseklik (iOS 15.4+, Chrome 108+) */
+  @supports (height: 100svh){ #stage{ --availH: calc(100svh - var(--insetY)); } }
   canvas{width:100%;height:100%;display:block;border-radius:14px;
     box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08);
     image-rendering:auto;touch-action:none;cursor:pointer}
@@ -156,8 +169,8 @@
 <div id="stage">
   <canvas id="game"></canvas>
   <div id="topBar">
-    <button id="gear" title="Ayarlar (S)" aria-label="Ayarlar">&#9881;</button>
-    <button id="shopBtn" title="Mağaza (K)">Mağaza</button>
+    <button id="gear" title="Ayarlar" aria-label="Ayarlar">&#9881;</button>
+    <button id="shopBtn" title="Mağaza">Mağaza</button>
   </div>
   <div id="toast" class="toast" hidden></div>
   <div id="shopModal" hidden>
@@ -180,7 +193,7 @@
         <input id="sSfx" type="range" min="0" max="100" step="5" value="80"></label>
       <label>Müzik <b id="vMusic">35%</b>
         <input id="sMusic" type="range" min="0" max="100" step="5" value="35"></label>
-      <label class="row"><input id="sMute" type="checkbox"> Tümünü sustur (M)</label>
+      <label class="row"><input id="sMute" type="checkbox"> Tümünü sustur</label>
 
       <div class="save-wrap">
         <button id="installBtn" type="button" hidden>📲 Ana Ekrana Ekle</button>
@@ -209,6 +222,25 @@ function fit(){
   if (cvs.width !== bw || cvs.height !== bh){ cvs.width = bw; cvs.height = bh; }
   ctx.setTransform(k,0,0,k,0,0);
 }
+/* Emniyet ağı: svh/min() desteklemeyen eski tarayıcılarda bile sahne görünür alana sığsın. */
+const stageEl = document.getElementById('stage');
+function clampStage(){
+  if (!stageEl) return;
+  stageEl.style.width = ''; stageEl.style.height = '';
+  const r = stageEl.getBoundingClientRect();
+  const vw = (window.visualViewport && window.visualViewport.width)  || innerWidth;
+  const vh = (window.visualViewport && window.visualViewport.height) || innerHeight;
+  if (r.width > vw || r.height > vh){
+    const k = Math.min(vw / r.width, vh / r.height) * 0.98;
+    stageEl.style.width  = Math.floor(r.width  * k) + 'px';
+    stageEl.style.height = Math.floor(r.height * k) + 'px';
+  }
+  markFit();
+}
+addEventListener('resize', clampStage);
+addEventListener('orientationchange', () => setTimeout(clampStage, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', clampStage);
+clampStage();
 addEventListener('resize', markFit);
 if (window.ResizeObserver) new ResizeObserver(markFit).observe(cvs);
 fit();
@@ -3034,9 +3066,9 @@ function update(dt){
 
 /* ============================ ARAYÜZ ============================ */
 /* Ortalanmış yazı; tuvale sığmıyorsa punto otomatik küçülür (mobilde taşma olmaz). */
-function outlined(text, x, y, size, fill, weight){
+function outlined(text, x, y, size, fill, weight, limit){
   const w8 = weight || 700;
-  const maxW = Math.max(60, Math.min(W - 20, 2*Math.min(x, W - x) - 12));
+  const maxW = Math.max(46, Math.min(limit || (W - 20), 2*Math.min(x, W - x) - 12));
   ctx.font = w8+' '+size+'px "Trebuchet MS", Verdana, sans-serif';
   let tw = ctx.measureText(text).width;
   if (tw > maxW){
@@ -3216,7 +3248,7 @@ function drawHUD(){
   if (state === 'ready'){
     const b = Math.sin(t*3)*4;
     outlined('FLAPPY PLANE', W/2, 132, 40, '#ffe45c');
-    outlined('DOKUN  ·  SPACE  ·  ↑', W/2, 196 + b, 19);
+    outlined('BAŞLAMAK İÇİN DOKUN', W/2, 196 + b, 19);
     outlined('rekor  ' + best, W/2, 236, 18, '#e6dfa6');
     if (nearRecord >= 2){
       outlined('⚡ en uzun kıl payı zinciri  x' + nearRecord, W/2, 262, 14, '#ffd257');
@@ -3224,7 +3256,6 @@ function drawHUD(){
     if (hellActive){
       outlined('🔥 CEHENNEM MODU AKTİF (20+)', W/2, nearRecord >= 2 ? 290 : 272, 15, '#ff6a4a');
     }
-    outlined('P duraklat · M ses · S ayarlar · K mağaza', W/2, SKY_H - 26, 12, 'rgba(255,255,255,.9)');
   }
 
   if (state === 'over'){
@@ -3257,12 +3288,18 @@ function drawHUD(){
       const tierName = ['', 'KIL PAYI', 'EFSANE', 'İĞNE DELİĞİ'][clamp(runNearTier,1,3)];
       ctx.save();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#8a7433';
-      ctx.font = '700 12px "Trebuchet MS", sans-serif';
-      ctx.fillText(runNear + ' KIL PAYI' + (nearComboBest >= 2 ? ' · x' + nearComboBest : ''), px+62, py+128);
-      ctx.fillStyle = runNearTier >= 3 ? '#b07d15' : '#9c8a44';
-      ctx.font = '700 11px "Trebuchet MS", sans-serif';
-      ctx.fillText('en iyi: ' + tierName, px+58, py+145);
+      const fitFill = (txt, cx, cy, fs, col, box) => {   // kutuya sığmazsa punto küçülür
+        ctx.fillStyle = col;
+        let f = fs;
+        ctx.font = '700 ' + f + 'px "Trebuchet MS", sans-serif';
+        while (ctx.measureText(txt).width > box && f > 8){
+          f--; ctx.font = '700 ' + f + 'px "Trebuchet MS", sans-serif';
+        }
+        ctx.fillText(txt, cx, cy);
+      };
+      fitFill(runNear + ' KIL PAYI' + (nearComboBest >= 2 ? ' · x' + nearComboBest : ''),
+              px+62, py+128, 12, '#8a7433', 108);
+      fitFill('en iyi: ' + tierName, px+62, py+145, 11, runNearTier >= 3 ? '#b07d15' : '#9c8a44', 108);
       ctx.restore();
     }
 
@@ -3276,42 +3313,46 @@ function drawHUD(){
       ctx.fillText('YENİ!', 0, 1);
       ctx.restore();
     }
+    /* Panelin altındaki satırlar tek bir dikey yığında dizilir; hepsi panel
+       genişliğiyle sınırlı, böylece hiçbir yazı panelden/ekrandan taşmaz. */
+    const LIM = pw - 12;                       // panel içi güvenli genişlik
+    let sy = py + ph + 22;
     if (runEarn > 0){
+      const totalTxt = '+' + fmtCoin(runEarn);
+      const fs = 19, r = fs*0.42, gap = 7;
+      ctx.font = '700 ' + fs + 'px "Trebuchet MS", Verdana, sans-serif';
+      const tw = ctx.measureText(totalTxt).width;
+      const x0 = W/2 - (r*2 + gap + tw)/2;     // madeni para + tutar tek grup, ortalanmış
+      coinIcon(x0 + r, sy, r);
+      outlined(totalTxt, x0 + r*2 + gap + tw/2, sy, fs, '#ffe066', 700, LIM);
+      sy += 21;
+
       const extraParts = [];
       if (runMedalBonus) extraParts.push(m.n + ' +' + fmtCoin(runMedalBonus));
       if (runBestBonus) extraParts.push('rekor +' + fmtCoin(runBestBonus));
       if (runNearCoins > 0) extraParts.push('kıl payı +' + fmtCoin(runNearCoins));
-      const earnTxt = '+' + fmtCoin(runEarn) + (extraParts.length ? '   (' + extraParts.join(' · ') + ')' : '');
-      // Panel genişliğini aşmasın: gerekirse yazıyı küçült.
-      let earnFs = 17;
-      ctx.font = '700 ' + earnFs + 'px "Trebuchet MS", Verdana, sans-serif';
-      let ew = ctx.measureText(earnTxt).width;
-      while (ew > W - 72 && earnFs > 11){
-        earnFs--;
-        ctx.font = '700 ' + earnFs + 'px "Trebuchet MS", Verdana, sans-serif';
-        ew = ctx.measureText(earnTxt).width;
+      if (extraParts.length){
+        outlined(extraParts.join('  ·  '), W/2, sy, 13, '#f2e3a6', 700, LIM);
+        sy += 21;
       }
-      coinIcon(W/2 - ew/2 - 12, py + ph + 24, earnFs*0.5);
-      outlined(earnTxt, W/2 + 11, py + ph + 24, earnFs, '#ffe066');
     }
     if (score >= 40){
-      outlined('💎 MİTOLOJİK ELMAS MEKİK KAZANILDI! 💎', W/2, py + ph + (runEarn > 0 ? 48 : 24), 13, '#bbf2f6');
+      outlined('💎 ELMAS MEKİK KAZANILDI! 💎', W/2, sy, 13, '#bbf2f6', 700, LIM); sy += 21;
     } else if (score >= 30){
-      outlined('🚀 EFSANEVİ ALTIN MEKİK KAZANILDI! 🚀', W/2, py + ph + (runEarn > 0 ? 48 : 24), 13, '#ffd700');
+      outlined('🚀 ALTIN MEKİK KAZANILDI! 🚀', W/2, sy, 13, '#ffd700', 700, LIM); sy += 21;
     }
     ctx.restore();
 
     if (overT > 0.55){
       const b = Math.sin(t*4)*3;
-      const replayY = (score >= 30) && runEarn > 0 ? 456 : 442;
-      outlined('DOKUN  ·  SPACE  ·  R    tekrar oyna', W/2, replayY + b, 17);
+      outlined('TEKRAR OYNAMAK İÇİN DOKUN', W/2, Math.max(sy + 8, 442) + b, 17, '#fff', 700, LIM);
     }
   }
 
   if (paused){
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(0,0,W,H);
     outlined('DURAKLATILDI', W/2, H/2-14, 34, '#ffe45c');
-    outlined('devam etmek için P', W/2, H/2+26, 17);
+    outlined('devam etmek için dokun', W/2, H/2+26, 17);
   }
 
   const isShopOpen = typeof Shop !== 'undefined' && typeof Shop.isOpen === 'function' && Shop.isOpen();
