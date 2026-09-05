@@ -15,8 +15,10 @@
 <style>
   *{box-sizing:border-box}
   [hidden]{display:none !important}
-  html,body{height:100%;margin:0;background:#0d1018;overflow:hidden;
-    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+  html,body{height:100%;margin:0;background:#0d1018;overflow:hidden;overscroll-behavior:none;
+    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;-webkit-user-select:none;user-select:none;
+    -webkit-text-size-adjust:100%;text-size-adjust:100%}
+  button,input,textarea{touch-action:manipulation}
   body{display:grid;place-items:center;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -25,19 +27,20 @@
     box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08);
     image-rendering:auto;touch-action:none;cursor:pointer}
   #topBar{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;z-index:4}
-  #gear{width:34px;height:34px;border:0;border-radius:50%;
-    background:rgba(0,0,0,.35);color:rgba(255,255,255,.85);font-size:17px;line-height:34px;cursor:pointer;padding:0;
+  #gear{width:38px;height:38px;border:0;border-radius:50%;
+    background:rgba(0,0,0,.35);color:rgba(255,255,255,.85);font-size:18px;line-height:38px;cursor:pointer;padding:0;
     box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);transition:all .15s;backdrop-filter:blur(4px)}
-  #gear:hover{background:rgba(0,0,0,.6);transform:scale(1.05)}
-  #shopBtn{height:34px;padding:0 11px;border:0;border-radius:17px;
+  @media (hover:hover){ #gear:hover{background:rgba(0,0,0,.6);transform:scale(1.05)} }
+  #shopBtn{height:38px;padding:0 14px;border:0;border-radius:19px;
     background:rgba(0,0,0,.35);color:#fff;font:700 13px inherit;cursor:pointer;
     box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);transition:all .15s;backdrop-filter:blur(4px);
     display:inline-flex;align-items:center;gap:4px}
-  #shopBtn:hover{background:rgba(0,0,0,.6);transform:scale(1.03)}
+  @media (hover:hover){ #shopBtn:hover{background:rgba(0,0,0,.6);transform:scale(1.03)} }
   #modal,#shopModal{position:absolute;inset:0;background:rgba(0,0,0,.52);border-radius:14px;
     display:grid;place-items:center;z-index:10;backdrop-filter:blur(3px)}
   #modal[hidden],#shopModal[hidden]{display:none}
-  #settings{width:min(84%,300px);background:#e6dfa6;color:#4a3f16;border:3px solid #7d7237;
+  #settings{width:min(86%,300px);max-height:92%;overflow:auto;background:#e6dfa6;color:#4a3f16;
+    border:3px solid #7d7237;-webkit-overflow-scrolling:touch;
     border-radius:14px;padding:16px 18px;box-shadow:0 18px 40px rgba(0,0,0,.5);font-size:13px}
   #settings h3{margin:0 0 4px;font-size:19px;text-align:center;color:#c96b1f}
   #settings label{display:block;margin:12px 0}
@@ -48,17 +51,8 @@
   #sClose{width:100%;margin-top:16px;padding:9px;border:0;border-radius:8px;background:#c96b1f;
     color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
   #sClose:hover{background:#b25c14}
-  .save-wrap{margin-top:14px;padding-top:12px;border-top:1px dashed #b9ad6a}
-  .save-wrap h4{margin:0 0 4px;font-size:14px;color:#7d5a12}
-  .save-wrap p{margin:0 0 8px;font-size:11.5px;line-height:1.45;color:#6b5c28}
-  .save-row{display:flex;gap:6px}
-  .save-row button{flex:1;padding:8px 6px;border:0;border-radius:8px;background:#7d7237;color:#fff;
-    font:700 12px inherit;cursor:pointer;transition:background .15s}
-  .save-row button:hover{background:#655c27}
-  #saveCode{width:100%;margin-top:8px;height:58px;resize:vertical;border:2px solid #b9ad6a;border-radius:8px;
-    padding:6px 8px;font:600 10.5px ui-monospace,Menlo,Consolas,monospace;color:#4a3f16;background:#f6f0c9;
-    word-break:break-all}
-  #installBtn{width:100%;margin-top:10px;padding:9px;border:0;border-radius:8px;background:#2b7a3f;color:#fff;
+  .save-wrap:not(:has(#installBtn:not([hidden]))){display:none}
+  #installBtn{width:100%;padding:9px;border:0;border-radius:8px;background:#2b7a3f;color:#fff;
     font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
   #installBtn:hover{background:#22622f}
   .reset-wrap{margin-top:14px;padding-top:12px;border-top:1px dashed #b9ad6a}
@@ -86,10 +80,11 @@
     box-shadow:inset 0 0 0 1.2px rgba(116,64,0,.5)}
   .sect{margin:12px 0 6px;font-size:12px;letter-spacing:1px;color:#8a7c3a;text-transform:uppercase}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:360px){ .grid{gap:7px} }
   .card{position:relative;padding:0;border:2px solid #b9ad6a;border-radius:12px;background:#f6f0c9;cursor:pointer;
     overflow:hidden;font:inherit;color:inherit;text-align:center;transition:transform .15s,border-color .15s,box-shadow .15s;
     display:flex;flex-direction:column}
-  .card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.15)}
+  @media (hover:hover){ .card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.15)} }
   .card .preview-wrap{position:relative;width:100%;aspect-ratio:150/98;background:#55a8c9;overflow:hidden}
   .card canvas{display:block;width:100%;height:100%}
   .card .info{padding:5px 6px 7px;display:flex;flex-direction:column;flex:1;justify-content:space-between}
@@ -188,15 +183,6 @@
       <label class="row"><input id="sMute" type="checkbox"> Tümünü sustur (M)</label>
 
       <div class="save-wrap">
-        <h4>💾 İlerleme Yedeği</h4>
-        <p>Rekorun, coinlerin ve kostümlerin bu cihazda otomatik saklanır. Telefonu değiştirirken
-           ya da tarayıcı verilerini silmeden önce yedek kodunu alıp saklaman yeterli.</p>
-        <div class="save-row">
-          <button id="sExport" type="button">📤 Yedek Kodu Al</button>
-          <button id="sImport" type="button">📥 Yedeği Yükle</button>
-        </div>
-        <textarea id="saveCode" placeholder="Yedek kodu burada görünür; yüklemek için kodu buraya yapıştır."
-                  spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
         <button id="installBtn" type="button" hidden>📲 Ana Ekrana Ekle</button>
       </div>
 
@@ -1651,8 +1637,7 @@ const nearMult    = n => Math.min(NEAR_COMBO_MAX, 1 + Math.max(0, n - 1) * NEAR_
 const fmtMult     = m => '×' + (Math.round(m*100)/100).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
 
 const Wallet = (() => {
-  const DEF = { coins: 100, owned: ['bird','plane','classic'], skin: 'bird', tint: 'classic', gifts: [] };
-  const GIFTS = { welcome200: 200 };                 // tek seferlik, kalıcı olarak işaretlenir
+  const DEF = { coins: 0, owned: ['bird','plane','classic'], skin: 'bird', tint: 'classic', gifts: [] };
   let w;
   try { w = Object.assign({}, DEF, JSON.parse(store.get('flappy.wallet', '{}'))); }
   catch (e){ w = Object.assign({}, DEF); }
@@ -1670,14 +1655,9 @@ const Wallet = (() => {
     }
   });
   const save = () => store.set('flappy.wallet', JSON.stringify(w));
-  let granted = 0;                               // bu açılışta yatan hediye
-  for (const id in GIFTS){
-    if (!w.gifts.includes(id)){ w.gifts.push(id); w.coins += GIFTS[id]; granted += GIFTS[id]; }
-  }
-  save();                                        // ilk açılışta 100 coin deneme bakiyesi
+  save();                                        // açılış hediyesi yok: her coin oynayarak kazanılır
   return {
     get coins(){ return w.coins; },
-    get granted(){ return granted; },
     get skin(){ return w.skin; },
     get tint(){ return w.tint; },
     owns(id){ return w.owned.includes(id); },
@@ -1697,8 +1677,8 @@ const Wallet = (() => {
       w.owned = ['bird', 'plane', 'classic'];
       w.skin = 'bird';
       w.tint = 'classic';
-      w.gifts = ['welcome200'];
-      w.coins = 300;
+      w.gifts = [];
+      w.coins = 0;
       palCache = { key:'', val:null };
       save();
     }
@@ -1706,8 +1686,7 @@ const Wallet = (() => {
 })();
 
 const fmtCoin = n => Math.round(n).toLocaleString('tr-TR');
-let giftT = Wallet.granted > 0 ? 4.2 : 0;      // hoş geldin hediyesi rozeti
-let coinShown = Wallet.coins - Wallet.granted; // hediye açılışta sayaçta sayılarak görünsün
+let coinShown = Wallet.coins;
 let coinPulse = 0;
 
 let runEarn = 0, runBonus = 0, runMedalBonus = 0, runBestBonus = 0, runNear = 0, coinPops = [];
@@ -2888,7 +2867,6 @@ function update(dt){
   updateConfetti(dt);
   updateCoinPops(dt);
   milestoneT = Math.max(0, milestoneT - dt);
-  giftT = Math.max(0, giftT - dt);
   coinPulse = Math.max(0, coinPulse - dt*2.2);
   if (Math.abs(coinShown - Wallet.coins) > 0.5){
     coinShown += (Wallet.coins - coinShown) * Math.min(1, dt*9);
@@ -3055,12 +3033,21 @@ function update(dt){
 }
 
 /* ============================ ARAYÜZ ============================ */
+/* Ortalanmış yazı; tuvale sığmıyorsa punto otomatik küçülür (mobilde taşma olmaz). */
 function outlined(text, x, y, size, fill, weight){
-  ctx.font = (weight||700)+' '+size+'px "Trebuchet MS", Verdana, sans-serif';
+  const w8 = weight || 700;
+  const maxW = Math.max(60, Math.min(W - 20, 2*Math.min(x, W - x) - 12));
+  ctx.font = w8+' '+size+'px "Trebuchet MS", Verdana, sans-serif';
+  let tw = ctx.measureText(text).width;
+  if (tw > maxW){
+    size = Math.max(9, Math.floor(size * maxW / tw));
+    ctx.font = w8+' '+size+'px "Trebuchet MS", Verdana, sans-serif';
+  }
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, size*0.17);
   ctx.strokeStyle = '#2b2417'; ctx.strokeText(text, x, y);
   ctx.fillStyle = fill || '#fff';  ctx.fillText(text, x, y);
+  return size;
 }
 function panel(x,y,w,h){
   ctx.save();
@@ -3178,26 +3165,6 @@ function coinPill(x, y, text){
   ctx.restore();
 }
 
-/* tek seferlik hediye rozeti */
-function giftPill(x, y){
-  const a = Math.min(1, giftT/0.6);
-  const txt = 'HEDİYE  +' + fmtCoin(Wallet.granted || 200);
-  ctx.save();
-  ctx.globalAlpha = a;
-  ctx.font = '700 13px "Trebuchet MS", Verdana, sans-serif';
-  const w = ctx.measureText(txt).width + 38;
-  ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
-  pill(x, y-13, w, 26, 'gift');
-  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-  coinIcon(x+15, y, 8.5);
-  ctx.fillStyle = '#ffdf8a';
-  ctx.font = '700 13px "Trebuchet MS", Verdana, sans-serif';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(txt, x+28, y+0.5);
-  ctx.restore();
-  ctx.globalAlpha = 1;
-}
-
 function drawHUD(){
   if (state === 'play' || state === 'dead'){
     ctx.save();
@@ -3292,7 +3259,7 @@ function drawHUD(){
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#8a7433';
       ctx.font = '700 12px "Trebuchet MS", sans-serif';
-      ctx.fillText(runNear + ' KIL PAYI' + (nearComboBest >= 2 ? '  ·  zincir x' + nearComboBest : ''), px+58, py+128);
+      ctx.fillText(runNear + ' KIL PAYI' + (nearComboBest >= 2 ? ' · x' + nearComboBest : ''), px+62, py+128);
       ctx.fillStyle = runNearTier >= 3 ? '#b07d15' : '#9c8a44';
       ctx.font = '700 11px "Trebuchet MS", sans-serif';
       ctx.fillText('en iyi: ' + tierName, px+58, py+145);
@@ -3351,7 +3318,6 @@ function drawHUD(){
   const isCfgOpen = typeof Cfg !== 'undefined' && typeof Cfg.isOpen === 'function' && Cfg.isOpen();
   if (!isShopOpen && !isCfgOpen){
     coinPill(12, 66, fmtCoin(coinShown));
-    if (giftT > 0) giftPill(12, 102);
     drawCoinPops();
   }
   iconBtn(BTN_SOUND.x, BTN_SOUND.y, Audio2.levels.muted ? 'mute' : 'sound');
@@ -3724,8 +3690,14 @@ cvs.addEventListener('pointerdown', e => {
   const pt = toCanvas(e);
   if (near(pt, BTN_SOUND)){ Audio2.unlock(); Cfg.toggleMute(); return; }
   if (near(pt, BTN_PAUSE)){ if (state === 'play' || paused) paused = !paused; return; }
+  // Telefonda duraklamış oyuna dokunmak devam ettirsin (klavye kısayolu yok).
+  if (paused){ paused = false; Audio2.unlock(); return; }
   flap();
 });
+// iOS Safari "user-scalable=no" bilgisini yok sayar: yakınlaştırmayı elle engelle.
+['gesturestart','gesturechange','gestureend'].forEach(t =>
+  document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
 addEventListener('keydown', e => {
   if (Cfg.isOpen() || Shop.isOpen()){
     if (e.code === 'Escape' || e.code === 'KeyS' || e.code === 'KeyK'){
@@ -3756,65 +3728,6 @@ addEventListener('blur', () => { if (state === 'play') paused = true; });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && state === 'play') paused = true;
 });
-
-/* ==================== YEDEK / GERİ YÜKLEME ====================
-   Tüm ilerleme localStorage'da tutulur; aşağıdaki kod onu taşınabilir
-   tek bir metin koduna çevirir (FP1:<base64 JSON>). */
-const SaveIO = (() => {
-  const KEYS = ['flappy.wallet', 'flappy.best', 'flappy.nearcombo', 'flappy.audio'];
-  const b64e = str => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
-  const b64d = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
-
-  function exportCode(){
-    const data = {};
-    KEYS.forEach(k => { const v = store.get(k, null); if (v !== null) data[k] = v; });
-    return 'FP1:' + b64e(JSON.stringify({ v: 1, at: new Date().toISOString().slice(0,10), data }));
-  }
-  function importCode(code){
-    const raw = String(code || '').trim().replace(/\s+/g, '');
-    if (!raw.startsWith('FP1:')) throw new Error('Kod "FP1:" ile başlamalı.');
-    const obj = JSON.parse(b64d(raw.slice(4)));
-    if (!obj || typeof obj.data !== 'object' || obj.data === null) throw new Error('Kod okunamadı.');
-    const keys = Object.keys(obj.data).filter(k => KEYS.includes(k));
-    if (!keys.length) throw new Error('Kodda kayıtlı ilerleme yok.');
-    if (obj.data['flappy.wallet']) JSON.parse(obj.data['flappy.wallet']);   // bozuk kodu erken yakala
-    keys.forEach(k => store.set(k, String(obj.data[k])));
-    return keys.length;
-  }
-  return { exportCode, importCode };
-})();
-
-(function wireSaveUI(){
-  const box = document.getElementById('saveCode');
-  const btnE = document.getElementById('sExport');
-  const btnI = document.getElementById('sImport');
-  if (!box || !btnE || !btnI) return;
-
-  btnE.addEventListener('click', async () => {
-    const code = SaveIO.exportCode();
-    box.value = code;
-    box.focus(); box.select();
-    let copied = false;
-    try { await navigator.clipboard.writeText(code); copied = true; } catch(e){
-      try { copied = document.execCommand('copy'); } catch(e2){}
-    }
-    showToast(copied ? '📤 Yedek kodu kopyalandı — güvenli bir yere kaydet.'
-                     : '📤 Yedek kodu hazır — kutudaki metni kopyala.', 3200);
-  });
-
-  btnI.addEventListener('click', () => {
-    const code = box.value.trim();
-    if (!code){ showToast('Önce yedek kodunu kutuya yapıştır.'); Audio2.deny(); return; }
-    try {
-      const n = SaveIO.importCode(code);
-      showToast('📥 Yedek yüklendi (' + n + ' kayıt) — oyun yenileniyor…', 1600);
-      setTimeout(() => location.reload(), 900);
-    } catch(err){
-      Audio2.deny();
-      showToast('❌ Yedek yüklenemedi: ' + err.message, 3600);
-    }
-  });
-})();
 
 /* ==================== PWA: kurulum, çevrimdışı, kalıcı depolama ==================== */
 (function pwa(){

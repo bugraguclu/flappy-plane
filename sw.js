@@ -1,7 +1,7 @@
 /* Flappy Plane — çevrimdışı önbellek.
    Oyun tek dosya olduğu için önbellek de tek girişten ibaret.
    index.html güncellenince CACHE sürümünü artır: v1 → v2. */
-const CACHE = 'flappy-plane-v1';
+const CACHE = 'flappy-plane-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html']))
